@@ -1,8 +1,8 @@
 // Routes.js - Módulo de rutas
-var express = require('express');
-var router = express.Router();
-
-
+const express = require('express');
+const router = express.Router();
+const push = require('./push');
+const URLSafeBase64 = require('urlsafe-base64');
 
 const messages = [
   {
@@ -45,6 +45,22 @@ router.post('/', function (req, res) {
   });
 });
 
+// Keeo the subscription
+router.post('/subscribe', (req, res) => {
+  const { token } = req.body;
+  console.log(token);
+  res.json('subscribe');
+});
 
+router.get('/key', (req, res) => {
+  const key = push.getKey();
+
+  res.send(key);
+});
+
+router.get('/push', (req, res) => {
+
+  res.json('Push');
+});
 
 module.exports = router;
