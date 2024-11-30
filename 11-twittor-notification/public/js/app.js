@@ -1,13 +1,23 @@
 const url = window.location.href;
 const API_URL = `${window.location.origin}/api/`;
-const swLocation = '/twittor-pwa/sw.js';
+let swLocation = '/twittor-pwa/sw.js';
+let swReg;
 
 if (navigator.serviceWorker) {
   if (url.includes('localhost')) {
-    navigator.serviceWorker.register('/sw.js');
-  } else {
-    navigator.serviceWorker.register(swLocation);
+    swLocation = '/sw.js';
   }
+
+  navigator.serviceWorker.register(swLocation);
+
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register(swLocation).then(reg => {
+      reg.pushManager.getSubscription().then(sub => {
+        swReg = reg;
+        swReg.pushManager.getSubscription().then(verifySubscription);
+      });
+    });
+  });
 }
 
 
@@ -204,8 +214,6 @@ function verifySubscription(areActivated) {
   }
 }
 
-verifySubscription();
-
 function sendNotification() {
   const notificationOpts = {
     body: 'This is the body of the notification',
@@ -247,4 +255,34 @@ function getPublicKey() {
     .then(key => new Uint8Array(key));
 }
 
-getPublicKey().then(console.log);
+btnDesactivadas.on('click', function () {
+  if (!swReg) return console.log('No hay registro de SW');
+
+  getPublicKey().then(key => {
+    swReg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: key,
+    })
+      .then(res => res.toJSON())
+      .then(subscription => {
+        console.log(subscription)
+        fetch('api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(subscription)
+        })
+          .then(verifySubscription)
+          .catch(cancelSubscription);
+      });
+  });
+});
+
+function cancelSubscription() {
+  swReg.pushManager.getSubscription().then(sub => {
+    sub.unsubscribe().then(() => verifySubscription(false));
+  });
+}
+
+btnActivadas.on('click', function () {
+  cancelSubscription();
+});

@@ -17,12 +17,13 @@ function updateStaticCache(staticCache, req, APP_SHELL_INMUTABLE) {
       return updateDynamicCache(staticCache, req, res);
     });
   }
-} 
+}
 
 function handleApiMessages(cacheName, req) {
 
-  if (req.clone().method === 'POST') {
-    
+  if (req.url.indexOf('/api/key') >= 0 || req.url.indexOf('/api/subscribe') >= 0) {
+    return fetch(req);
+  } else if (req.clone().method === 'POST') {
     if (self?.registration?.sync) {
       return req.clone().text().then(body => {
         const bodyObj = JSON.parse(body);
