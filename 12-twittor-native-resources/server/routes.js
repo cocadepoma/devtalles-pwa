@@ -35,9 +35,8 @@ router.post('/', function (req, res) {
   const user = req.body.user;
 
   const id = Math.random().toString(36).substring(7);
-  messages.push({ _id: id, message, user });
+  messages.push({ _id: id, message, user, lat: req.body.lat, lng: req.body.lng, foto: req.body.foto });
 
-  console.log(messages)
   res.json({
     ok: true,
     message,

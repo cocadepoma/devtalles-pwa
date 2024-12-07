@@ -82,6 +82,20 @@ body {
   z-index: 99999;
 }
 
+/* Camera */
+.camara-contenedor {
+  width: 100%;
+  padding: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 5px solid white;
+}
+
+.camara-contenedor button {
+  background-color: #3498db;
+  color: white;
+}
+
 .nuevo-mensaje {
   margin-top: 1rem;
   padding-left: 5px;

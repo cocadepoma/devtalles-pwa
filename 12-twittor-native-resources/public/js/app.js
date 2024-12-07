@@ -67,15 +67,20 @@ var foto = null;
 // El usuario, contiene el ID del héroe seleccionado
 var usuario;
 
-
-
+// Ininit camera
+const camera = new Camera(document.querySelector('#player'));
 
 // ===== Codigo de la aplicación
 
-function crearMensajeHTML(mensaje, personaje) {
+function crearMensajeHTML(mensaje, personaje, lat, lng, foto) {
 
   var content = `
-    <li class="animated fadeIn fast">
+    <li class="animated fadeIn fast"
+        data-mensaje="${mensaje}"
+        data-user="${personaje}"
+        data-tipo="mensaje">
+
+
         <div class="avatar">
             <img src="img/avatars/${personaje}.jpg">
         </div>
@@ -84,19 +89,40 @@ function crearMensajeHTML(mensaje, personaje) {
                 <h3>@${personaje}</h3>
                 <br/>
                 ${mensaje}
+                `;
+
+  if (foto) {
+    content += `
+                <br>
+                <img class="foto-mensaje" src="${foto}">
+        `;
+  }
+
+  content += `</div>        
+                <div class="arrow"></div>
             </div>
-            
-            <div class="arrow"></div>
-        </div>
-    </li>
+        </li>
     `;
+
+
+  // si existe la latitud y longitud, 
+  // llamamos la funcion para crear el mapa
+  if (lat) {
+    crearMensajeMapa(lat, lng, personaje);
+  }
+
+  // Borramos la latitud y longitud por si las usó
+  lat = null;
+  lng = null;
+
+  $('.modal-mapa').remove();
 
   timeline.prepend(content);
   cancelarBtn.click();
 
 }
 
-function createMapMessage(lat, lng, personaje) {
+function crearMensajeMapa(lat, lng, personaje) {
 
 
   let content = `
@@ -199,20 +225,20 @@ postBtn.on('click', function () {
     return;
   }
 
-  postMessage(message, usuario);
-  crearMensajeHTML(message, usuario);
+  postMessage(message, usuario, lat, lng, foto);
+  crearMensajeHTML(message, usuario, lat, lng, foto);
 });
 
 
 // Post messages to server
-function postMessage(message, user) {
+function postMessage(message, user, lat, lng, foto) {
 
   fetch('api', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ message, user })
+    body: JSON.stringify({ message, user, lat, lng, foto })
   })
     .then(res => res.json())
     .then(data => {
@@ -228,9 +254,8 @@ function getMessages() {
   fetch('api')
     .then(res => res.json())
     .then(posts => {
-      console.log(posts)
       posts.forEach(post => {
-        crearMensajeHTML(post.message, post.user);
+        crearMensajeHTML(post.message, post.user, post.lat, post.lng, post.foto);
       });
     });
 }
@@ -367,8 +392,21 @@ function createMapModal(lat, lng) {
 // Get Geolocation
 btnLocation.on('click', () => {
 
-  console.log('Botón geolocalización');
+  $.mdtoast('Loading map...', {
+    interaction: true,
+    interactionTimeout: 1000,
+    actionText: 'Ok!'
+  });
 
+  if ('geolocation' in navigator) {
+    navigator.geolocation.getCurrentPosition(position => {
+      console.log(position)
+      createMapModal(position.coords.latitude, position.coords.longitude);
+
+      lat = position.coords.latitude;
+      lng = position.coords.longitude;
+    });
+  }
 
 });
 
@@ -379,17 +417,45 @@ btnLocation.on('click', () => {
 // que jQuery me cambie el valor del this
 btnPhoto.on('click', () => {
 
-  console.log('Inicializar camara');
-
+  contenedorCamara.removeClass('oculto');
+  camera.turnOn();
 });
 
 
 // Boton para tomar la foto
 btnTomarFoto.on('click', () => {
 
-  console.log('Botón tomar foto');
+  foto = camera.takePhoto();
+
+  camera.turnOff();
 
 });
 
 
 // Share API
+if (navigator.share) {
+  console.log('Soporta Share API');
+}
+
+timeline.on('click', 'li', function () {
+  let tipo = $(this).data('tipo');
+  let lat = $(this).data('lat');
+  let lng = $(this).data('lng');
+  let user = $(this).data('user');
+  let mensaje = $(this).data('mensaje');
+
+
+  const shareOpts = {
+    title: user,
+    text: mensaje,
+  };
+
+  if (tipo === 'mapa') {
+    shareOpts.text = 'Mapa';
+    shareOpts.url = `https://www.google.com/maps/@${lat},${lng},15z`;
+  }
+
+  navigator.share(shareOpts)
+    .then(() => console.log('Successful share'))
+    .catch((error) => console.log('Error sharing', error));
+});

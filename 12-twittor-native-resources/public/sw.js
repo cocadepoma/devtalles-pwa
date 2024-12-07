@@ -18,6 +18,7 @@ const APP_SHELL = [
   'img/avatars/thor.jpg',
   'img/avatars/wolverine.jpg',
   'js/app.js',
+  'js/camera-class.js',
   'js/sw-utils.js',
   'js/sw-db.js',
   'js/libs/mdtoast.min.js',
